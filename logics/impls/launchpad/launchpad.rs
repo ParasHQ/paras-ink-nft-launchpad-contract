@@ -19,9 +19,7 @@
 // OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-use crate::impls::launchpad::types::{
-    Data, MilliSeconds, MintingStatus, Percentage, Shiden34Error,
-};
+use crate::impls::launchpad::types::{Data, MintingStatus, Percentage, Shiden34Error};
 pub use crate::traits::launchpad::Launchpad;
 
 use ink::prelude::vec::Vec;
@@ -51,8 +49,6 @@ pub trait Internal {
     fn get_pseudo_random(&mut self, max_amount: u64) -> u64;
 
     fn get_mint_id(&mut self) -> u64;
-
-    fn get_refund_amount_and_price_internal(&self, token_id: u64) -> (Balance, Balance);
 
     fn get_available_to_withdraw_launchpad_internal(&self) -> Balance;
 
@@ -178,50 +174,6 @@ where
         self.get_available_to_withdraw_project_internal()
     }
 
-    default fn refund(&mut self, token_id: u64) -> Result<u128, PSP34Error> {
-        let caller_id = Self::env().caller();
-
-        if caller_id != self._owner_of(&Id::U64(token_id)).unwrap() {
-            return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::Unauthorized.as_str(),
-            )));
-        }
-
-        let (refund_amount, price) = self.get_refund_amount_and_price_internal(token_id);
-
-        if refund_amount == 0 {
-            return Err(PSP34Error::Custom(String::from(
-                Shiden34Error::RefundFailed.as_str(),
-            )));
-        } else {
-            let refund_address = self.data::<Data>().refund_address.unwrap();
-            let res = self._transfer_token(refund_address, Id::U64(token_id), Vec::new());
-            match res {
-                Ok(_) => {
-                    self.data::<Data>().minting_type_for_token.remove(token_id);
-
-                    Self::env()
-                        .transfer(caller_id, refund_amount)
-                        .map_err(|_| {
-                            PSP34Error::Custom(String::from(
-                                Shiden34Error::WithdrawalFailed.as_str(),
-                            ))
-                        })?;
-                    self._emit_refund_event(
-                        caller_id,
-                        refund_address,
-                        Some(Id::U64(token_id)),
-                        price,
-                        refund_amount,
-                    );
-                    self.data::<Data>().total_refund += refund_amount;
-                }
-                _ => (),
-            };
-            return Ok(refund_amount);
-        }
-    }
-
     /// Set max number of tokens which could be minted per call
     #[modifiers(only_owner)]
     default fn set_max_mint_amount(&mut self, max_amount: u64) -> Result<(), PSP34Error> {
@@ -242,10 +194,6 @@ where
     /// Get max number of tokens which could be minted per call
     default fn get_max_mint_amount(&mut self) -> u64 {
         self.data::<Data>().max_amount
-    }
-
-    default fn get_refund_amount(&self, token_id: u64) -> Balance {
-        self.get_refund_amount_and_price_internal(token_id).0
     }
 
     #[modifiers(only_owner)]
@@ -307,19 +255,6 @@ where
         return Ok(());
     }
 
-    #[modifiers(only_owner)]
-    default fn set_refund_periods(
-        &mut self,
-        refund_periods: Vec<MilliSeconds>,
-    ) -> Result<(), PSP34Error> {
-        if self.data::<Data>().refund_periods.len() != refund_periods.len() {
-            return Err(PSP34Error::Custom(String::from("InvalidInput")));
-        }
-
-        self.data::<Data>().refund_periods = refund_periods;
-        Ok(())
-    }
-
     default fn get_minting_status(&self) -> String {
         let minting_status = self.get_current_minting_status();
         match minting_status {
@@ -329,16 +264,6 @@ where
             MintingStatus::Public => return "public".as_bytes().to_vec(),
             MintingStatus::End => return "end".as_bytes().to_vec(),
         }
-    }
-
-    default fn _emit_refund_event(
-        &self,
-        _from: AccountId,
-        _to: AccountId,
-        _id: Option<Id>,
-        _price: Balance,
-        _refunded: Balance,
-    ) {
     }
 
     default fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> u64 {
@@ -377,18 +302,6 @@ where
 
     default fn presale_price(&self) -> Balance {
         self.data::<Data>().presale_price_per_mint
-    }
-
-    default fn get_refund_periods(&self) -> Vec<MilliSeconds> {
-        self.data::<Data>().refund_periods.to_vec()
-    }
-
-    default fn get_refund_shares(&self) -> Vec<Percentage> {
-        self.data::<Data>().refund_shares.to_vec()
-    }
-
-    default fn get_refund_address(&self) -> AccountId {
-        self.data::<Data>().refund_address.unwrap()
     }
 
     default fn get_launchpad_fee(&self) -> Percentage {
@@ -537,40 +450,6 @@ where
         return Ok(());
     }
 
-    default fn get_refund_amount_and_price_internal(&self, token_id: u64) -> (Balance, Balance) {
-        let minting_status = self.get_current_minting_status();
-        if minting_status != MintingStatus::End {
-            return (0, 0);
-        }
-
-        let minting_type_index = self.data::<Data>().minting_type_for_token.get(token_id);
-        if minting_type_index.is_none() {
-            return (0, 0);
-        }
-        let current_timestamp = Self::env().block_timestamp();
-
-        let price: u128 = if minting_type_index.unwrap() == 1 {
-            self.data::<Data>().prepresale_price_per_mint
-        } else if minting_type_index.unwrap() == 2 {
-            self.data::<Data>().presale_price_per_mint
-        } else {
-            self.data::<Data>().price_per_mint
-        };
-
-        for (i, refund_period) in self.data::<Data>().refund_periods.iter().enumerate() {
-            if current_timestamp < (self.data::<Data>().public_sale_end_at + refund_period) {
-                let refund_share: Balance =
-                    *self.data::<Data>().refund_shares.get(i).unwrap_or(&100);
-
-                let refund_amount: Balance = (price * refund_share).saturating_div(100); // TO DO: check accuracy
-
-                return (refund_amount, price);
-            }
-        }
-
-        return (0, 0);
-    }
-
     default fn get_current_minting_status(&self) -> MintingStatus {
         if let Some(minting_status) = self.data::<Data>().forced_minting_status {
             return MintingStatus::from(minting_status);
@@ -583,7 +462,7 @@ where
                     .data::<psp34::Data<enumerable::Balances>>()
                     .total_supply()
         {
-            // or if token supply abis
+            // or if token supply is depleted
             return MintingStatus::End;
         } else if current_timestamp > self.data::<Data>().public_sale_start_at {
             return MintingStatus::Public;
@@ -622,29 +501,7 @@ where
     }
 
     fn get_total_withdraw_share_internal(&self) -> u128 {
-        let current_timestamp = Self::env().block_timestamp();
-
-        let mut total_withdraw_share: u128 = 0;
-
-        if current_timestamp
-            > (self.data::<Data>().public_sale_end_at
-                + self.data::<Data>().refund_periods.last().unwrap())
-        {
-            total_withdraw_share =
-                self.data::<Data>().total_sales - self.data::<Data>().total_refund;
-        } else {
-            for (i, refund_period) in self.data::<Data>().refund_periods.iter().enumerate() {
-                if current_timestamp < (self.data::<Data>().public_sale_end_at + refund_period) {
-                    let non_refundable_percentage: Balance =
-                        100 - *self.data::<Data>().refund_shares.get(i).unwrap_or(&100);
-
-                    total_withdraw_share = (non_refundable_percentage
-                        * self.data::<Data>().total_sales)
-                        .saturating_div(100);
-                    break;
-                }
-            }
-        }
+        let total_withdraw_share: u128 = self.data::<Data>().total_sales;
         return total_withdraw_share;
     }
 }

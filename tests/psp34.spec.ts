@@ -2,13 +2,13 @@ import { expect, use } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { encodeAddress } from "@polkadot/keyring";
 import BN from "bn.js";
-import ParasRefundable_factory from "../types/constructors/paras_refundable";
-import ParasRefundable from "../types/contracts/paras_refundable";
+import ParasLaunchpad_factory from "../types/constructors/paras_launchpad";
+import ParasLaunchpad from "../types/contracts/paras_launchpad";
 
 import { ApiPromise, WsProvider, Keyring } from "@polkadot/api";
 import { KeyringPair } from "@polkadot/keyring/types";
 import { ReturnNumber } from "@727-ventures/typechain-types";
-import { Id, IdBuilder } from "../types/types-arguments/paras_refundable";
+import { Id, IdBuilder } from "../types/types-arguments/paras_launchpad";
 
 use(chaiAsPromised);
 
@@ -26,12 +26,12 @@ const wsProvider = new WsProvider("ws://127.0.0.1:9944");
 const keyring = new Keyring({ type: "sr25519" });
 
 describe("Minting psp34 tokens", () => {
-  let parasRefundableFactory: ParasRefundable_factory;
+  let parasLaunchpadFactory: ParasLaunchpad_factory;
   let api: ApiPromise;
   let deployer: KeyringPair;
   let bob: KeyringPair;
   let projectAccount: KeyringPair;
-  let contract: ParasRefundable;
+  let contract: ParasLaunchpad;
 
   const gasLimit = 18750000000;
   const ZERO_ADDRESS = encodeAddress(
@@ -44,11 +44,11 @@ describe("Minting psp34 tokens", () => {
     deployer = keyring.addFromUri("//Alice");
     bob = keyring.addFromUri("//Bob");
     projectAccount = keyring.addFromUri("//Charlie");
-    parasRefundableFactory = new ParasRefundable_factory(api, deployer);
-    contract = new ParasRefundable(
+    parasLaunchpadFactory = new ParasLaunchpad_factory(api, deployer);
+    contract = new ParasLaunchpad(
       (
-        await parasRefundableFactory.new(
-          ["ParasRefundable"], // name: String,
+        await parasLaunchpadFactory.new(
+          ["ParasLaunchpad"], // name: String,
           ["PR"], // symbol: String,
           [BASE_URI], // base_uri: String,
           MAX_SUPPLY, // max_supply: u64,
@@ -59,9 +59,6 @@ describe("Minting psp34 tokens", () => {
           0, // presale_start_at: u64,
           0, // public_sale_start_at: u64,
           1711626898000, // public_sale_end_at: u64,
-          [], // refund_periods: Vec<MilliSeconds>,
-          [], // refund_shares: Vec<Percentage>,
-          projectAccount.address, // refund_address: AccountId,
           10, // launchpad_fee: Percentage,
           projectAccount.address, // project_treasury: AccountId,
           deployer.address // launchpad_treasury: AccountId,

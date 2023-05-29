@@ -1,10 +1,10 @@
 use ink::prelude::vec::Vec;
 use openbrush::{
-    contracts::psp34::{Id, PSP34Error},
+    contracts::psp34::PSP34Error,
     traits::{AccountId, Balance, String},
 };
 
-use crate::impls::launchpad::types::{MilliSeconds, Percentage};
+use crate::impls::launchpad::types::Percentage;
 
 #[openbrush::wrapper]
 pub type LaunchpadRef = dyn Launchpad;
@@ -18,13 +18,6 @@ pub trait Launchpad {
     /// Mint next available token for the caller
     #[ink(message, payable)]
     fn mint_next(&mut self) -> Result<(), PSP34Error>;
-
-    #[ink(message)]
-    fn refund(&mut self, token_id: u64) -> Result<u128, PSP34Error>;
-
-    // Get refund amount for given token_id
-    #[ink(message)]
-    fn get_refund_amount(&self, token_id: u64) -> Balance;
 
     #[ink(message)]
     fn get_available_to_withdraw_launchpad(&self) -> Balance;
@@ -73,15 +66,6 @@ pub trait Launchpad {
     fn get_public_sale_end_at(&self) -> u64;
 
     #[ink(message)]
-    fn get_refund_periods(&self) -> Vec<MilliSeconds>;
-
-    #[ink(message)]
-    fn get_refund_shares(&self) -> Vec<Percentage>;
-
-    #[ink(message)]
-    fn get_refund_address(&self) -> AccountId;
-
-    #[ink(message)]
     fn get_launchpad_fee(&self) -> Percentage;
 
     #[ink(message)]
@@ -89,9 +73,6 @@ pub trait Launchpad {
 
     #[ink(message)]
     fn get_launchpad_treasury_address(&self) -> AccountId;
-
-    #[ink(message)]
-    fn set_refund_periods(&mut self, refund_periods: Vec<MilliSeconds>) -> Result<(), PSP34Error>;
 
     /// Get max number of tokens which could be minted per call
     #[ink(message)]
@@ -134,13 +115,4 @@ pub trait Launchpad {
 
     #[ink(message)]
     fn get_minting_status(&self) -> String;
-
-    fn _emit_refund_event(
-        &self,
-        from: AccountId,
-        to: AccountId,
-        id: Option<Id>,
-        price: Balance,
-        refunded: Balance,
-    );
 }
