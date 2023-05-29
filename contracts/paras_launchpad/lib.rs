@@ -62,56 +62,74 @@ pub mod paras_launchpad {
         approved: bool,
     }
 
-    impl ParasLaunchpadContract {
+    impl ParasLaunchpadContract
+    where
+        T: Storage<Data> + Storage<psp34::Data<enumerable::Balances>>,
+    {
         #[ink(constructor)]
         pub fn new(
-            name: String,
-            symbol: String,
             base_uri: String,
-            max_supply: u64,
-            prepresale_price_per_mint: Balance,
-            presale_price_per_mint: Balance,
-            price_per_mint: Balance,
-            prepresale_start_at: u64,
-            presale_start_at: u64,
-            public_sale_start_at: u64,
-            public_sale_end_at: u64,
-            launchpad_fee: Percentage,
+            presale_price_per_mint: Balance, // presale price in astar
+            price_per_mint: Balance,         // public prce in astar
+            prepresale_start_at: u64,        // set to 0
+            presale_start_at: u64,           // set to 0
+            public_sale_start_at: u64,       // 1 day after presale_start_at (in milliseconds)
             project_treasury: AccountId,
-            launchpad_treasury: AccountId,
         ) -> Self {
             let mut instance = Self::default();
 
-            instance._init_with_owner(instance.env().caller());
+            let caller = instance.env().caller();
+            instance._init_with_owner(caller);
             let collection_id = instance.collection_id();
-            instance._set_attribute(collection_id.clone(), String::from("name"), name);
-            instance._set_attribute(collection_id.clone(), String::from("symbol"), symbol);
+
+            // constructor set
+            instance._set_attribute(
+                collection_id.clone(),
+                String::from("name"),
+                "Neurolauncher".as_bytes().to_vec(),
+            );
+            instance._set_attribute(
+                collection_id.clone(),
+                String::from("symbol"),
+                "NRL".as_bytes().to_vec(),
+            );
+
+            instance.launchpad.max_supply = 1000;
+
             instance._set_attribute(collection_id, String::from("baseUri"), base_uri);
 
-            instance.launchpad.max_supply = max_supply;
+            // pricing
+            instance.launchpad.prepresale_price_per_mint = None;
+            instance.launchpad.presale_price_per_mint = Some(presale_price_per_mint);
+            instance.launchpad.price_per_mint = Some(price_per_mint);
 
-            // public
-            instance.launchpad.price_per_mint = price_per_mint;
-            instance.launchpad.prepresale_price_per_mint = prepresale_price_per_mint;
-            instance.launchpad.presale_price_per_mint = presale_price_per_mint;
+            instance.launchpad.max_amount = 3;
 
-            instance.launchpad.max_amount = 10;
-            instance.launchpad.token_set = (1..max_supply + 1).map(u64::from).collect::<Vec<u64>>();
-            instance.launchpad.pseudo_random_salt = 0;
             instance.launchpad.project_treasury = Some(project_treasury);
             instance.launchpad.prepresale_start_at = prepresale_start_at;
             instance.launchpad.presale_start_at = presale_start_at;
             instance.launchpad.public_sale_start_at = public_sale_start_at;
-            instance.launchpad.public_sale_end_at = public_sale_end_at;
+            instance.launchpad.public_sale_end_at = None;
 
-            // validation
-            assert!(launchpad_fee < 100);
+            instance.launchpad.launchpad_fee = 0;
+            instance.launchpad.launchpad_treasury = None;
 
+            let mint_to_owner = 100;
+
+            // preinstantiate (dont change)
             instance.launchpad.total_sales = 0;
             instance.launchpad.withdrawn_sales_launchpad = 0;
             instance.launchpad.withdrawn_sales_project = 0;
-            instance.launchpad.launchpad_fee = launchpad_fee;
-            instance.launchpad.launchpad_treasury = Some(launchpad_treasury);
+            instance.launchpad.token_set = ((mint_to_owner + 2)
+                ..(instance.launchpad.max_supply - mint_to_owner) + 1)
+                .map(u64::from)
+                .collect::<Vec<u64>>();
+            instance.launchpad.pseudo_random_salt = 0;
+
+            // mint the first 100 to owner wallet
+            for i in 1..(mint_to_owner + 1) {
+                let _ = instance.psp34._mint_to(caller, Id::U64(i));
+            }
 
             instance
         }
@@ -156,7 +174,10 @@ pub mod paras_launchpad {
         const PREPRESALE_PRICE: Balance = 10_000_000_000_000_000;
         const PRESALE_PRICE: Balance = 20_000_000_000_000_000;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
-        const MAX_SUPPLY: u64 = 10;
+        const MAX_SUPPLY: u64 = 1000;
+        const SUPPLY_MINTED_TO_OWNER: u128 = 100;
+        const NAME: &str = "Neurolauncher";
+        const SYMBOL: &str = "NRL";
 
         const PUBLIC_SALE_END_AT: u64 = 1682899200000;
         const ONE_MONTH_IN_MILLIS: u64 = 2592000000;
@@ -167,11 +188,11 @@ pub mod paras_launchpad {
             let collection_id = sh34.collection_id();
             assert_eq!(
                 sh34.get_attribute(collection_id.clone(), String::from("name")),
-                Some(String::from("Shiden34"))
+                Some(String::from(NAME))
             );
             assert_eq!(
                 sh34.get_attribute(collection_id.clone(), String::from("symbol")),
-                Some(String::from("SH34"))
+                Some(String::from(SYMBOL))
             );
             assert_eq!(
                 sh34.get_attribute(collection_id, String::from("baseUri")),
@@ -184,20 +205,13 @@ pub mod paras_launchpad {
         fn init() -> ParasLaunchpadContract {
             let accounts = default_accounts();
             ParasLaunchpadContract::new(
-                String::from("Shiden34"), // name: String,
-                String::from("SH34"),     // symbol: String,
-                String::from(BASE_URI),   // base_uri: String,
-                MAX_SUPPLY,               // max_supply: u64,
-                PREPRESALE_PRICE,         // prepresale_price_per_mint: Balance,
-                PRESALE_PRICE,            // presale_price_per_mint: Balance
-                PRICE,                    // price_per_mint: Balance,
-                0,                        // prepresale_start_at: u64,
-                0,                        // presale_start_at: u64,
-                0,                        // public_sale_start_at: u64,
-                PUBLIC_SALE_END_AT,       // public_sale_end_at: u64,
-                10,
-                accounts.charlie, // project_treasury: AccountId,
-                accounts.django,
+                String::from(BASE_URI), // base_uri: String,
+                PRESALE_PRICE,          // presale_price_per_mint: Balance
+                PRICE,                  // price_per_mint: Balance,
+                0,                      // prepresale_start_at: u64,
+                0,                      // presale_start_at: u64,
+                0,                      // public_sale_start_at: u64,
+                accounts.charlie,       // project_treasury: AccountId,
             )
         }
 
@@ -212,10 +226,10 @@ pub mod paras_launchpad {
 
             set_sender(accounts.bob);
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRICE);
             assert!(sh34.mint_next().is_ok());
-            assert_eq!(sh34.total_supply(), 1);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER + 1);
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
             assert_eq!(
@@ -276,7 +290,7 @@ pub mod paras_launchpad {
 
             set_sender(accounts.bob);
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PREPRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), 1);
@@ -304,10 +318,10 @@ pub mod paras_launchpad {
 
             set_sender(accounts.bob);
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
-            assert_eq!(sh34.total_supply(), 1);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER + 1);
             assert_eq!(sh34.get_account_presale_minting_amount(accounts.bob), 0);
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
@@ -344,16 +358,7 @@ pub mod paras_launchpad {
             test::set_block_timestamp::<ink::env::DefaultEnvironment>(PUBLIC_SALE_END_AT + 1);
 
             set_sender(accounts.django);
-            assert!(sh34.withdraw_launchpad().is_ok());
-
-            assert_eq!(
-                test::get_account_balance::<ink::env::DefaultEnvironment>(accounts.django)
-                    .ok()
-                    .unwrap(),
-                (PRESALE_PRICE * 10) / 100
-            );
-
-            assert_eq!(1, ink::env::test::recorded_events().count());
+            assert!(sh34.withdraw_launchpad().is_err());
         }
 
         #[ink::test]
@@ -380,13 +385,14 @@ pub mod paras_launchpad {
             test::set_block_timestamp::<ink::env::DefaultEnvironment>(PUBLIC_SALE_END_AT + 1);
 
             set_sender(accounts.charlie);
+
             assert!(sh34.withdraw_project().is_ok());
 
             assert_eq!(
                 test::get_account_balance::<ink::env::DefaultEnvironment>(accounts.charlie)
                     .ok()
                     .unwrap(),
-                (PRESALE_PRICE * 90) / 100
+                (PRESALE_PRICE * 100) / 100
             );
 
             assert_eq!(1, ink::env::test::recorded_events().count());
@@ -410,12 +416,15 @@ pub mod paras_launchpad {
                 ))
             );
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(
                 PRICE * num_of_mints as u128,
             );
             assert!(sh34.mint(accounts.bob, num_of_mints).is_ok());
-            assert_eq!(sh34.total_supply(), num_of_mints as u128);
+            assert_eq!(
+                sh34.total_supply(),
+                SUPPLY_MINTED_TO_OWNER + num_of_mints as u128
+            );
             assert_eq!(sh34.balance_of(accounts.bob), 5);
             assert_eq!(5, ink::env::test::recorded_events().count());
         }
@@ -427,7 +436,7 @@ pub mod paras_launchpad {
             set_sender(accounts.alice);
             let num_of_mints: u64 = MAX_SUPPLY + 1;
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(
                 PRICE * num_of_mints as u128,
             );
@@ -448,7 +457,7 @@ pub mod paras_launchpad {
             set_sender(accounts.bob);
             let num_of_mints = 1;
 
-            assert_eq!(sh34.total_supply(), 0);
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
             test::set_value_transferred::<ink::env::DefaultEnvironment>(
                 PRICE * num_of_mints as u128 - 1,
             );
@@ -463,32 +472,7 @@ pub mod paras_launchpad {
                 sh34.mint_next(),
                 Err(PSP34Error::Custom(Shiden34Error::BadMintValue.as_str()))
             );
-            assert_eq!(sh34.total_supply(), 0);
-        }
-
-        #[ink::test]
-        fn withdrawal_works() {
-            let mut sh34 = init();
-            let accounts = default_accounts();
-
-            set_sender(accounts.alice);
-            assert!(sh34.set_minting_status(Some(3)).is_ok());
-
-            set_balance(accounts.bob, PRICE);
-            set_sender(accounts.bob);
-
-            assert!(pay_with_call!(sh34.mint_next(), PRICE).is_ok());
-            let expected_contract_balance = PRICE + sh34.env().minimum_balance();
-            assert_eq!(sh34.env().balance(), expected_contract_balance);
-
-            // Bob fails to withdraw
-            set_sender(accounts.bob);
-            assert!(sh34.withdraw_launchpad().is_err());
-            assert_eq!(sh34.env().balance(), expected_contract_balance);
-
-            // Django (launchpad treasrury) withdraws. Existential minimum is still set
-            set_sender(accounts.django);
-            assert!(sh34.withdraw_launchpad().is_ok());
+            assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER);
         }
 
         #[ink::test]
@@ -558,20 +542,13 @@ pub mod paras_launchpad {
             let max_supply = u64::MAX - 1;
             let accounts = default_accounts();
             let mut sh34 = ParasLaunchpadContract::new(
-                String::from("Shiden34"), // name: String,
-                String::from("SH34"),     // symbol: String,
-                String::from(BASE_URI),   // base_uri: String,
-                max_supply,               // max_supply: u64
-                PREPRESALE_PRICE,
+                String::from(BASE_URI), // base_uri: String,
                 PRESALE_PRICE,
-                PRICE, // price_per_mint: Balance,
-                0,     // prepresale_start_at: u64,
-                0,     // presale_start_at: u64,
-                0,     // public_sale_start_at: u64,
-                0,     // public_sale_end_at: u64,
-                10,
+                PRICE,            // price_per_mint: Balance,
+                0,                // prepresale_start_at: u64,
+                0,                // presale_start_at: u64,
+                0,                // public_sale_start_at: u64,
                 accounts.charlie, // project_treasury: AccountId,
-                accounts.django,  // launchpad_treasury: AccountId,
             );
 
             // check case when last_token_id.add(mint_amount) if more than u64::MAX
@@ -596,20 +573,13 @@ pub mod paras_launchpad {
             let price = u128::MAX as u128;
             let accounts = default_accounts();
             let sh34 = ParasLaunchpadContract::new(
-                String::from("Shiden34"), // name: String,
-                String::from("SH34"),     // symbol: String,
-                String::from(BASE_URI),   // base_uri: String,
-                max_supply,               // max_supply: u64,
-                PREPRESALE_PRICE,
+                String::from(BASE_URI), // base_uri: String,
                 PRESALE_PRICE,
-                price,           // price_per_mint: Balance,
-                0,               // prepresale_start_at: u64,
-                0,               // presale_start_at: u64,
-                0,               // public_sale_start_at: u64,
-                100000000000000, // public_sale_end_at: u64,
-                10,
+                price,            // price_per_mint: Balance,
+                0,                // prepresale_start_at: u64,
+                0,                // presale_start_at: u64,
+                0,                // public_sale_start_at: u64,
                 accounts.charlie, // project_treasury: AccountId,
-                accounts.django,
             );
             let transferred_value = u128::MAX;
             let mint_amount = u64::MAX;
