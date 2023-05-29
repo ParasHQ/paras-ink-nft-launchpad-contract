@@ -120,7 +120,7 @@ pub mod neurolauncher {
             instance.launchpad.total_sales = 0;
             instance.launchpad.withdrawn_sales_launchpad = 0;
             instance.launchpad.withdrawn_sales_project = 0;
-            instance.launchpad.token_set = ((mint_to_owner + 2)
+            instance.launchpad.token_set = ((mint_to_owner + 1)
                 ..(instance.launchpad.max_supply - mint_to_owner) + 1)
                 .map(u64::from)
                 .collect::<Vec<u64>>();
