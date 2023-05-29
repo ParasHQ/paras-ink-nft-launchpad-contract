@@ -105,6 +105,7 @@ where
     default fn get_attribute_count(&self) -> u32 {
         self.data::<Data>().attribute_count
     }
+
     /// Get Attribute Name
     default fn get_attribute_name(&self, index: u32) -> PreludeString {
         let attribute = self.data::<Data>().attribute_names.get(&index);

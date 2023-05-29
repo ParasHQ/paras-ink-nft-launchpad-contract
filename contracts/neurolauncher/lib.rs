@@ -2,7 +2,7 @@
 #![feature(min_specialization)]
 
 #[openbrush::contract]
-pub mod paras_launchpad {
+pub mod neurolauncher {
     use ink::codegen::{EmitEvent, Env};
     use openbrush::{
         contracts::{
@@ -23,7 +23,7 @@ pub mod paras_launchpad {
     // Shiden34Contract contract storage
     #[ink(storage)]
     #[derive(Default, Storage)]
-    pub struct ParasLaunchpadContract {
+    pub struct Neurolauncher {
         #[storage_field]
         psp34: psp34::Data<enumerable::Balances>,
         #[storage_field]
@@ -34,10 +34,10 @@ pub mod paras_launchpad {
         launchpad: types::Data,
     }
 
-    impl PSP34 for ParasLaunchpadContract {}
-    impl PSP34Enumerable for ParasLaunchpadContract {}
-    impl PSP34Metadata for ParasLaunchpadContract {}
-    impl Ownable for ParasLaunchpadContract {}
+    impl PSP34 for Neurolauncher {}
+    impl PSP34Enumerable for Neurolauncher {}
+    impl PSP34Metadata for Neurolauncher {}
+    impl Ownable for Neurolauncher {}
 
     /// Event emitted when a token transfer occurs.
     #[ink(event)]
@@ -62,7 +62,7 @@ pub mod paras_launchpad {
         approved: bool,
     }
 
-    impl ParasLaunchpadContract
+    impl Neurolauncher
     where
         T: Storage<Data> + Storage<psp34::Data<enumerable::Balances>>,
     {
@@ -136,7 +136,7 @@ pub mod paras_launchpad {
     }
 
     // Override event emission methods
-    impl psp34::Internal for ParasLaunchpadContract {
+    impl psp34::Internal for Neurolauncher {
         fn _emit_transfer_event(&self, from: Option<AccountId>, to: Option<AccountId>, id: Id) {
             self.env().emit_event(Transfer { from, to, id });
         }
@@ -157,8 +157,8 @@ pub mod paras_launchpad {
         }
     }
 
-    impl Launchpad for ParasLaunchpadContract {}
-    impl Psp34Traits for ParasLaunchpadContract {}
+    impl Launchpad for Neurolauncher {}
+    impl Psp34Traits for Neurolauncher {}
 
     // ------------------- T E S T -----------------------------------------------------
     #[cfg(test)]
@@ -202,9 +202,9 @@ pub mod paras_launchpad {
             assert_eq!(sh34.price(), PRICE);
         }
 
-        fn init() -> ParasLaunchpadContract {
+        fn init() -> Neurolauncher {
             let accounts = default_accounts();
-            ParasLaunchpadContract::new(
+            Neurolauncher::new(
                 String::from(BASE_URI), // base_uri: String,
                 PRESALE_PRICE,          // presale_price_per_mint: Balance
                 PRICE,                  // price_per_mint: Balance,
@@ -477,7 +477,7 @@ pub mod paras_launchpad {
 
         #[ink::test]
         fn token_uri_works() {
-            use crate::paras_launchpad::Id::U64;
+            use crate::neurolauncher::Id::U64;
 
             let mut sh34 = init();
             let accounts = default_accounts();
@@ -541,7 +541,7 @@ pub mod paras_launchpad {
         fn check_supply_overflow_ok() {
             let max_supply = u64::MAX - 1;
             let accounts = default_accounts();
-            let mut sh34 = ParasLaunchpadContract::new(
+            let mut sh34 = Neurolauncher::new(
                 String::from(BASE_URI), // base_uri: String,
                 PRESALE_PRICE,
                 PRICE,            // price_per_mint: Balance,
@@ -572,7 +572,7 @@ pub mod paras_launchpad {
             let max_supply = u64::MAX;
             let price = u128::MAX as u128;
             let accounts = default_accounts();
-            let sh34 = ParasLaunchpadContract::new(
+            let sh34 = Neurolauncher::new(
                 String::from(BASE_URI), // base_uri: String,
                 PRESALE_PRICE,
                 price,            // price_per_mint: Balance,

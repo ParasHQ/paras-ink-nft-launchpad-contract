@@ -63,7 +63,7 @@ pub trait Launchpad {
     fn get_public_sale_start_at(&self) -> u64;
 
     #[ink(message)]
-    fn get_public_sale_end_at(&self) -> u64;
+    fn get_public_sale_end_at(&self) -> Option<u64>;
 
     #[ink(message)]
     fn get_launchpad_fee(&self) -> Percentage;

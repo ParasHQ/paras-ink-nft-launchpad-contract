@@ -1,5 +1,5 @@
 [package]
-name = "paras_launchpad"
+name = "neurolauncher"
 version = "0.3.0"
 authors = ["Paras <dev@paras.id>"]
 edition = "2021"
@@ -15,7 +15,7 @@ psp34_extension_pkg = { path = "../../logics", default-features = false }
 
 
 [lib]
-name = "paras_launchpad"
+name = "neurolauncher"
 path = "lib.rs"
 crate-type = [
 	# Used for normal contract Wasm blobs.

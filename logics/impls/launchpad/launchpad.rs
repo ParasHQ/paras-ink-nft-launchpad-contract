@@ -90,9 +90,6 @@ where
             self.data::<psp34::Data<enumerable::Balances>>()
                 ._mint_to(to, Id::U64(mint_id))?;
             self._emit_transfer_event(None, Some(to), Id::U64(mint_id));
-            self.data::<Data>()
-                .minting_type_for_token
-                .insert(mint_id, &minting_status.to_index());
         }
 
         self.data::<Data>().total_sales += transferred_value;
@@ -114,10 +111,6 @@ where
             ._mint_to(caller_id, Id::U64(mint_id))?;
 
         self._emit_transfer_event(None, Some(caller_id), Id::U64(mint_id));
-
-        self.data::<Data>()
-            .minting_type_for_token
-            .insert(mint_id, &minting_status.to_index());
 
         self.data::<Data>().total_sales += transferred_value;
         return Ok(());
@@ -188,7 +181,7 @@ where
 
     /// Get token price
     default fn price(&self) -> Balance {
-        self.data::<Data>().price_per_mint
+        self.data::<Data>().price_per_mint.unwrap()
     }
 
     /// Get max number of tokens which could be minted per call
@@ -292,16 +285,16 @@ where
         self.data::<Data>().public_sale_start_at
     }
 
-    default fn get_public_sale_end_at(&self) -> u64 {
+    default fn get_public_sale_end_at(&self) -> Option<u64> {
         self.data::<Data>().public_sale_end_at
     }
 
     default fn prepresale_price(&self) -> Balance {
-        self.data::<Data>().prepresale_price_per_mint
+        self.data::<Data>().prepresale_price_per_mint.unwrap()
     }
 
     default fn presale_price(&self) -> Balance {
-        self.data::<Data>().presale_price_per_mint
+        self.data::<Data>().presale_price_per_mint.unwrap()
     }
 
     default fn get_launchpad_fee(&self) -> Percentage {
@@ -340,7 +333,7 @@ where
             }
         };
 
-        if let Some(value) = (mint_amount as u128).checked_mul(price) {
+        if let Some(value) = (mint_amount as u128).checked_mul(price.unwrap()) {
             if transferred_value == value {
                 return Ok(());
             }
@@ -456,7 +449,7 @@ where
         }
         let current_timestamp = Self::env().block_timestamp();
 
-        if current_timestamp > self.data::<Data>().public_sale_end_at
+        if current_timestamp > self.data::<Data>().public_sale_end_at.unwrap_or(u64::MAX)
             || u128::from(self.data::<Data>().max_supply)
                 == self
                     .data::<psp34::Data<enumerable::Balances>>()
