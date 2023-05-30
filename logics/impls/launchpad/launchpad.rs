@@ -96,6 +96,25 @@ where
         Ok(())
     }
 
+    default fn mint_project(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error> {
+        let caller_id = Self::env().caller();
+
+        if caller_id != self.data::<Data>().project_treasury.unwrap() {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::Unauthorized.as_str(),
+            )));
+        }
+
+        for _ in 0..mint_amount {
+            let mint_id = self.get_mint_id();
+            self.data::<psp34::Data<enumerable::Balances>>()
+                ._mint_to(to, Id::U64(mint_id))?;
+            self._emit_transfer_event(None, Some(to), Id::U64(mint_id));
+        }
+
+        Ok(())
+    }
+
     /// Mint next available token for the caller
     default fn mint_next(&mut self) -> Result<(), PSP34Error> {
         let caller_id = Self::env().caller();

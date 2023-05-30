@@ -14,11 +14,7 @@ pub mod neurolauncher {
 
     use ink::prelude::vec::Vec;
 
-    use psp34_extension_pkg::{
-        impls::launchpad::{types::Percentage, *},
-        traits::launchpad::*,
-        traits::psp34_traits::*,
-    };
+    use psp34_extension_pkg::{impls::launchpad::*, traits::launchpad::*, traits::psp34_traits::*};
 
     // Shiden34Contract contract storage
     #[ink(storage)]
@@ -71,10 +67,10 @@ pub mod neurolauncher {
             base_uri: String,
             presale_price_per_mint: Balance, // presale price in astar
             price_per_mint: Balance,         // public prce in astar
-            prepresale_start_at: u64,        // set to 0
-            presale_start_at: u64,           // set to 0
-            public_sale_start_at: u64,       // 1 day after presale_start_at (in milliseconds)
-            project_treasury: AccountId,
+            prepresale_start_at: u64,        // set to 1685538000000
+            presale_start_at: u64,           // set to 1685538000000
+            public_sale_start_at: u64, // 1 day after presale_start_at (in milliseconds) 1685628000000
+            project_treasury: AccountId, // WAbEH87bbRgSobQUaXfKnG5Dqb9EYgGUnewoHSVjYaLcLMA
         ) -> Self {
             let mut instance = Self::default();
 
@@ -128,7 +124,7 @@ pub mod neurolauncher {
 
             // mint the first 100 to owner wallet
             for i in 1..(mint_to_owner + 1) {
-                let _ = instance.psp34._mint_to(caller, Id::U64(i));
+                let _ = instance.psp34._mint_to(project_treasury, Id::U64(i));
             }
 
             instance

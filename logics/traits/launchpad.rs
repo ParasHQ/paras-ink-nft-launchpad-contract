@@ -15,6 +15,10 @@ pub trait Launchpad {
     #[ink(message, payable)]
     fn mint(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error>;
 
+    /// Mint for project treasury
+    #[ink(message)]
+    fn mint_project(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error>;
+
     /// Mint next available token for the caller
     #[ink(message, payable)]
     fn mint_next(&mut self) -> Result<(), PSP34Error>;
