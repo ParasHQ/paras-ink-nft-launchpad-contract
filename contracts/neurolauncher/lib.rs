@@ -259,10 +259,18 @@ pub mod neurolauncher {
             let accounts = default_accounts();
             set_sender(accounts.alice);
             assert!(sh34.add_account_to_prepresale(accounts.bob, 1).is_ok());
-            assert_eq!(sh34.get_account_prepresale_minting_amount(accounts.bob), 1);
+            assert_eq!(
+                sh34.get_account_prepresale_minting_amount(accounts.bob)
+                    .unwrap(),
+                1
+            );
 
             assert!(sh34.add_account_to_presale(accounts.bob, 1).is_ok());
-            assert_eq!(sh34.get_account_presale_minting_amount(accounts.bob), 1);
+            assert_eq!(
+                sh34.get_account_presale_minting_amount(accounts.bob)
+                    .unwrap(),
+                1
+            );
         }
 
         #[ink::test]
@@ -290,7 +298,11 @@ pub mod neurolauncher {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PREPRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), 1);
-            assert_eq!(sh34.get_account_prepresale_minting_amount(accounts.bob), 0);
+            assert_eq!(
+                sh34.get_account_prepresale_minting_amount(accounts.bob)
+                    .unwrap(),
+                0
+            );
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
             assert_eq!(
@@ -318,7 +330,11 @@ pub mod neurolauncher {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), SUPPLY_MINTED_TO_OWNER + 1);
-            assert_eq!(sh34.get_account_presale_minting_amount(accounts.bob), 0);
+            assert_eq!(
+                sh34.get_account_presale_minting_amount(accounts.bob)
+                    .unwrap(),
+                0
+            );
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
             assert_eq!(

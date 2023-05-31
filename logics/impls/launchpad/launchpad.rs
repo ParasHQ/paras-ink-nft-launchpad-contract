@@ -278,18 +278,12 @@ where
         }
     }
 
-    default fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> u64 {
-        self.data::<Data>()
-            .prepresale_whitelisted
-            .get(account_id)
-            .unwrap_or(0)
+    default fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> Option<u64> {
+        self.data::<Data>().prepresale_whitelisted.get(account_id)
     }
 
-    default fn get_account_presale_minting_amount(&self, account_id: AccountId) -> u64 {
-        self.data::<Data>()
-            .presale_whitelisted
-            .get(account_id)
-            .unwrap_or(0)
+    default fn get_account_presale_minting_amount(&self, account_id: AccountId) -> Option<u64> {
+        self.data::<Data>().presale_whitelisted.get(account_id)
     }
 
     default fn get_prepresale_start_at(&self) -> u64 {
