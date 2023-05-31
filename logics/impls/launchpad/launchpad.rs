@@ -196,6 +196,25 @@ where
         self.data::<Data>().max_amount
     }
 
+    default fn mint_project(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error> {
+        let caller_id = Self::env().caller();
+
+        if caller_id != self.data::<Data>().project_treasury.unwrap() {
+            return Err(PSP34Error::Custom(String::from(
+                Shiden34Error::Unauthorized.as_str(),
+            )));
+        }
+
+        for _ in 0..mint_amount {
+            let mint_id = self.get_mint_id();
+            self.data::<psp34::Data<enumerable::Balances>>()
+                ._mint_to(to, Id::U64(mint_id))?;
+            self._emit_transfer_event(None, Some(to), Id::U64(mint_id));
+        }
+
+        Ok(())
+    }
+
     #[modifiers(only_owner)]
     default fn add_account_to_prepresale(
         &mut self,
@@ -266,18 +285,12 @@ where
         }
     }
 
-    default fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> u64 {
-        self.data::<Data>()
-            .prepresale_whitelisted
-            .get(account_id)
-            .unwrap_or(0)
+    default fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> Option<u64> {
+        self.data::<Data>().prepresale_whitelisted.get(account_id)
     }
 
-    default fn get_account_presale_minting_amount(&self, account_id: AccountId) -> u64 {
-        self.data::<Data>()
-            .presale_whitelisted
-            .get(account_id)
-            .unwrap_or(0)
+    default fn get_account_presale_minting_amount(&self, account_id: AccountId) -> Option<u64> {
+        self.data::<Data>().presale_whitelisted.get(account_id)
     }
 
     default fn get_prepresale_start_at(&self) -> u64 {

@@ -249,10 +249,18 @@ pub mod paras_launchpad {
             let accounts = default_accounts();
             set_sender(accounts.alice);
             assert!(sh34.add_account_to_prepresale(accounts.bob, 1).is_ok());
-            assert_eq!(sh34.get_account_prepresale_minting_amount(accounts.bob), 1);
+            assert_eq!(
+                sh34.get_account_prepresale_minting_amount(accounts.bob)
+                    .unwrap(),
+                1
+            );
 
             assert!(sh34.add_account_to_presale(accounts.bob, 1).is_ok());
-            assert_eq!(sh34.get_account_presale_minting_amount(accounts.bob), 1);
+            assert_eq!(
+                sh34.get_account_presale_minting_amount(accounts.bob)
+                    .unwrap(),
+                1
+            );
         }
 
         #[ink::test]
@@ -280,7 +288,11 @@ pub mod paras_launchpad {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PREPRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), 1);
-            assert_eq!(sh34.get_account_prepresale_minting_amount(accounts.bob), 0);
+            assert_eq!(
+                sh34.get_account_prepresale_minting_amount(accounts.bob)
+                    .unwrap(),
+                0
+            );
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
             assert_eq!(
@@ -308,7 +320,11 @@ pub mod paras_launchpad {
             test::set_value_transferred::<ink::env::DefaultEnvironment>(PRESALE_PRICE);
             assert!(sh34.mint_next().is_ok());
             assert_eq!(sh34.total_supply(), 1);
-            assert_eq!(sh34.get_account_presale_minting_amount(accounts.bob), 0);
+            assert_eq!(
+                sh34.get_account_presale_minting_amount(accounts.bob)
+                    .unwrap(),
+                0
+            );
 
             let bob_token_id = sh34.owners_token_by_index(accounts.bob, 0);
             assert_eq!(
@@ -546,10 +562,15 @@ pub mod paras_launchpad {
                 sh34.get_attribute(collection_id, String::from("baseUri")),
                 Some(String::from(NEW_BASE_URI))
             );
+
+            set_sender(accounts.charlie);
+            let collection_id = sh34.collection_id();
+            assert!(sh34.set_base_uri(NEW_BASE_URI.into()).is_ok());
+
             set_sender(accounts.bob);
             assert_eq!(
                 sh34.set_base_uri(NEW_BASE_URI.into()),
-                Err(PSP34Error::Custom(String::from("O::CallerIsNotOwner")))
+                Err(PSP34Error::Custom(String::from("Unauthorized")))
             );
         }
 

@@ -51,8 +51,18 @@ where
     }
 
     /// Set new value for the baseUri
-    #[modifiers(only_owner)]
     default fn set_base_uri(&mut self, uri: PreludeString) -> Result<(), PSP34Error> {
+        let caller_id = Self::env().caller();
+
+        if ![
+            self.data::<Data>().project_treasury.unwrap(),
+            self.data::<ownable::Data>().owner,
+        ]
+        .contains(&caller_id)
+        {
+            return Err(PSP34Error::Custom(String::from("Unauthorized")));
+        }
+
         let id = self
             .data::<psp34::Data<enumerable::Balances>>()
             .collection_id();

@@ -19,6 +19,10 @@ pub trait Launchpad {
     #[ink(message, payable)]
     fn mint_next(&mut self) -> Result<(), PSP34Error>;
 
+    /// Mint for project treasury
+    #[ink(message)]
+    fn mint_project(&mut self, to: AccountId, mint_amount: u64) -> Result<(), PSP34Error>;
+
     #[ink(message)]
     fn get_available_to_withdraw_launchpad(&self) -> Balance;
 
@@ -105,10 +109,10 @@ pub trait Launchpad {
     ) -> Result<(), PSP34Error>;
 
     #[ink(message)]
-    fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> u64;
+    fn get_account_prepresale_minting_amount(&self, account_id: AccountId) -> Option<u64>;
 
     #[ink(message)]
-    fn get_account_presale_minting_amount(&self, account_id: AccountId) -> u64;
+    fn get_account_presale_minting_amount(&self, account_id: AccountId) -> Option<u64>;
 
     #[ink(message)]
     fn set_minting_status(&mut self, minting_status_index: Option<u8>) -> Result<(), PSP34Error>;
