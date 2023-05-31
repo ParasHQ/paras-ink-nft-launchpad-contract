@@ -542,10 +542,15 @@ pub mod neurolauncher {
                 sh34.get_attribute(collection_id, String::from("baseUri")),
                 Some(String::from(NEW_BASE_URI))
             );
+
+            set_sender(accounts.charlie);
+            let collection_id = sh34.collection_id();
+            assert!(sh34.set_base_uri(NEW_BASE_URI.into()).is_ok());
+
             set_sender(accounts.bob);
             assert_eq!(
                 sh34.set_base_uri(NEW_BASE_URI.into()),
-                Err(PSP34Error::Custom(String::from("O::CallerIsNotOwner")))
+                Err(PSP34Error::Custom(String::from("Unauthorized")))
             );
         }
 
