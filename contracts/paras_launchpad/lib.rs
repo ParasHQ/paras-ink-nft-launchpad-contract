@@ -97,7 +97,9 @@ pub mod paras_launchpad {
             instance.launchpad.presale_price_per_mint = presale_price_per_mint;
 
             instance.launchpad.max_amount = 10;
-            instance.launchpad.token_set = (1..max_supply + 1).map(u64::from).collect::<Vec<u64>>();
+            instance.launchpad.token_set = (1..max_supply as u16 + 1)
+                .map(u16::from)
+                .collect::<Vec<u16>>();
             instance.launchpad.pseudo_random_salt = 0;
             instance.launchpad.project_treasury = Some(project_treasury);
             instance.launchpad.prepresale_start_at = prepresale_start_at;
@@ -171,7 +173,7 @@ pub mod paras_launchpad {
         const PREPRESALE_PRICE: Balance = 10_000_000_000_000_000;
         const PRESALE_PRICE: Balance = 20_000_000_000_000_000;
         const BASE_URI: &str = "ipfs://myIpfsUri/";
-        const MAX_SUPPLY: u64 = 10;
+        const MAX_SUPPLY: u64 = 10000;
 
         const PUBLIC_SALE_END_AT: u64 = 1682899200000;
         const ONE_MONTH_IN_MILLIS: u64 = 2592000000;
@@ -209,7 +211,7 @@ pub mod paras_launchpad {
                 0,                        // prepresale_start_at: u64,
                 0,                        // presale_start_at: u64,
                 0,                        // public_sale_start_at: u64,
-                PUBLIC_SALE_END_AT,       // public_sale_end_at: u64,
+                Some(PUBLIC_SALE_END_AT), // public_sale_end_at: u64,
                 10,
                 accounts.charlie, // project_treasury: AccountId,
                 accounts.django,
@@ -600,11 +602,11 @@ pub mod paras_launchpad {
                 max_supply,               // max_supply: u64
                 PREPRESALE_PRICE,
                 PRESALE_PRICE,
-                PRICE, // price_per_mint: Balance,
-                0,     // prepresale_start_at: u64,
-                0,     // presale_start_at: u64,
-                0,     // public_sale_start_at: u64,
-                0,     // public_sale_end_at: u64,
+                PRICE,   // price_per_mint: Balance,
+                0,       // prepresale_start_at: u64,
+                0,       // presale_start_at: u64,
+                0,       // public_sale_start_at: u64,
+                Some(0), // public_sale_end_at: u64,
                 10,
                 accounts.charlie, // project_treasury: AccountId,
                 accounts.django,  // launchpad_treasury: AccountId,
@@ -638,11 +640,11 @@ pub mod paras_launchpad {
                 max_supply,               // max_supply: u64,
                 PREPRESALE_PRICE,
                 PRESALE_PRICE,
-                price,           // price_per_mint: Balance,
-                0,               // prepresale_start_at: u64,
-                0,               // presale_start_at: u64,
-                0,               // public_sale_start_at: u64,
-                100000000000000, // public_sale_end_at: u64,
+                price,                 // price_per_mint: Balance,
+                0,                     // prepresale_start_at: u64,
+                0,                     // presale_start_at: u64,
+                0,                     // public_sale_start_at: u64,
+                Some(100000000000000), // public_sale_end_at: u64,
                 10,
                 accounts.charlie, // project_treasury: AccountId,
                 accounts.django,

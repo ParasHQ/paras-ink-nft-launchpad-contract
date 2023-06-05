@@ -53,7 +53,7 @@ pub struct Data {
     pub max_supply: u64,
     pub price_per_mint: Balance,
     pub max_amount: u64,
-    pub token_set: Vec<u64>,
+    pub token_set: Vec<u16>,
     pub pseudo_random_salt: u64,
     pub forced_minting_status: Option<u8>,
     pub public_sale_start_at: u64,

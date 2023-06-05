@@ -12,7 +12,7 @@ import { Id, IdBuilder } from "../types/types-arguments/paras_launchpad";
 
 use(chaiAsPromised);
 
-const MAX_SUPPLY = 888;
+const MAX_SUPPLY = 3333;
 const BASE_URI = "ipfs://tokenUriPrefix/";
 const COLLECTION_METADATA = "ipfs://collectionMetadata/data.json";
 const TOKEN_URI_1 = "ipfs://tokenUriPrefix/1.json";
