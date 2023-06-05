@@ -9,6 +9,7 @@ pub mod paras_launchpad {
             ownable::*,
             psp34::extensions::{enumerable::*, metadata::*},
         },
+        modifiers,
         traits::{Storage, String},
     };
 
@@ -75,7 +76,7 @@ pub mod paras_launchpad {
             prepresale_start_at: u64,
             presale_start_at: u64,
             public_sale_start_at: u64,
-            public_sale_end_at: u64,
+            public_sale_end_at: Option<u64>,
             launchpad_fee: Percentage,
             project_treasury: AccountId,
             launchpad_treasury: AccountId,
@@ -114,6 +115,20 @@ pub mod paras_launchpad {
             instance.launchpad.launchpad_treasury = Some(launchpad_treasury);
 
             instance
+        }
+
+        #[ink(message)]
+        #[modifiers(only_owner)]
+        pub fn set_code(&mut self, code_hash: [u8; 32]) -> Result<(), PSP34Error> {
+            // TO DO: test set_code
+            ink::env::set_code_hash(&code_hash).unwrap_or_else(|err| {
+                panic!(
+                    "Failed to `set_code_hash` to {:?} due to {:?}",
+                    code_hash, err
+                )
+            });
+            ink::env::debug_println!("Switched code hash to {:?}.", code_hash);
+            Ok(())
         }
     }
 

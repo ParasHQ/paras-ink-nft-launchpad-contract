@@ -57,7 +57,7 @@ pub struct Data {
     pub pseudo_random_salt: u64,
     pub forced_minting_status: Option<u8>,
     pub public_sale_start_at: u64,
-    pub public_sale_end_at: u64,
+    pub public_sale_end_at: Option<u64>,
     pub prepresale_start_at: u64,
     pub prepresale_price_per_mint: Balance,
     pub prepresale_whitelisted: Mapping<AccountId, u64>,

@@ -305,7 +305,7 @@ where
         self.data::<Data>().public_sale_start_at
     }
 
-    default fn get_public_sale_end_at(&self) -> u64 {
+    default fn get_public_sale_end_at(&self) -> Option<u64> {
         self.data::<Data>().public_sale_end_at
     }
 
@@ -469,7 +469,7 @@ where
         }
         let current_timestamp = Self::env().block_timestamp();
 
-        if current_timestamp > self.data::<Data>().public_sale_end_at
+        if current_timestamp > self.data::<Data>().public_sale_end_at.unwrap_or(u64::MAX)
             || u128::from(self.data::<Data>().max_supply)
                 == self
                     .data::<psp34::Data<enumerable::Balances>>()
