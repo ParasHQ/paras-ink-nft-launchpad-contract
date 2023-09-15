@@ -403,7 +403,7 @@ where
         let token_set_idx = self.get_pseudo_random(token_length - 1);
         self.data::<Data>()
             .token_set
-            .swap_remove(token_set_idx as usize)
+            .swap_remove(token_set_idx as usize) as u64
     }
 
     default fn check_and_update_allowed_to_mint(
